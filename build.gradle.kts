@@ -60,16 +60,19 @@ dependencies {
     shadow("org.jetbrains.kotlin:kotlin-stdlib:1.9.22")
     shadow("com.moandjiezana.toml:toml4j:0.7.2")
     shadow("net.jodah:expiringmap:0.5.11")
+    
+    // 移除Bukkit相关依赖
+    implementation(annotationProcessor("com.google.code.gson:gson:2.10.1"))
 }
 
-val targetJavaVersion = 21
+val targetJavaVersion = 21 // 保持Java 21版本
 java {
     val javaVersion = JavaVersion.toVersion(targetJavaVersion)
     if (JavaVersion.current() < javaVersion) {
         toolchain.languageVersion.set(JavaLanguageVersion.of(targetJavaVersion))
     }
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
+    sourceCompatibility = javaVersion
+    targetCompatibility = javaVersion
 }
 
 // 处理资源文件
@@ -94,6 +97,12 @@ tasks.withType<JavaCompile>().configureEach {
     }
 }
 
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    kotlinOptions {
+        jvmTarget = targetJavaVersion.toString()
+    }
+}
+
 tasks.withType<ShadowJar> {
     archiveClassifier.set("dev")
     minimize()
@@ -110,7 +119,7 @@ tasks.jar {
 }
 
 kotlin {
-    jvmToolchain(21)
+    jvmToolchain(21) // 保持Kotlin JVM目标为21
 }
 
 // 使用正确的语法配置Loom
