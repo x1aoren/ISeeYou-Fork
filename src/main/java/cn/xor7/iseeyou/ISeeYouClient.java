@@ -3,14 +3,12 @@ package cn.xor7.iseeyou;
 import cn.xor7.iseeyou.recording.ReplayManager;
 import cn.xor7.iseeyou.utils.ConfigManager;
 import cn.xor7.iseeyou.utils.ModConfig;
-import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
-import net.minecraft.client.option.KeyBinding;
-import net.minecraft.client.util.InputUtil;
+import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.Text;
-import net.minecraft.client.MinecraftClient;
-import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,21 +18,20 @@ import java.time.format.DateTimeFormatter;
 
 /**
  * ISeeYou Fabric Mod主类
- * 实现即时回放功能的客户端模组，集成ReplayMod功能
+ * 实现服务器端玩家录制功能，记录玩家行为并生成回放文件
  */
-public class ISeeYouClient implements ClientModInitializer {
+public class ISeeYouClient implements ModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger("iseeyou");
-    private static KeyBinding recordKeyBinding;
-    private static KeyBinding instantReplayKeyBinding;
     public static final String MOD_ID = "iseeyou";
     public static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
     private static ModConfig config;
+    private static MinecraftServer server;
     
     /**
      * 初始化模组
      */
     @Override
-    public void onInitializeClient() {
+    public void onInitialize() {
         LOGGER.info("ISeeYou Mod初始化中...");
         
         // 加载配置
@@ -56,114 +53,100 @@ public class ISeeYouClient implements ClientModInitializer {
         // 初始化回放管理器
         ReplayManager.initialize();
         
-        // 注册按键绑定 - 开始/停止录制
-        recordKeyBinding = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "key.iseeyou.record", // 翻译键
-                InputUtil.Type.KEYSYM,
-                GLFW.GLFW_KEY_F8, // 默认为F8键
-                "category.iseeyou.general" // 翻译键
-        ));
+        // 注册服务器生命周期事件
+        ServerLifecycleEvents.SERVER_STARTING.register(server -> {
+            this.server = server;
+            LOGGER.info("服务器启动中，初始化录制系统...");
+        });
         
-        // 注册按键绑定 - 即时回放
-        instantReplayKeyBinding = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "key.iseeyou.instant_replay", // 翻译键
-                InputUtil.Type.KEYSYM,
-                GLFW.GLFW_KEY_F9, // 默认为F9键
-                "category.iseeyou.general" // 翻译键
-        ));
-
-        // 注册按键事件
-        ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            // 录制按键
-            while (recordKeyBinding.wasPressed()) {
-                handleRecordKeyPressed(client);
-            }
+        ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
+            LOGGER.info("服务器关闭中，停止所有录制...");
+            ReplayManager.stopAllRecordings();
+        });
+        
+        // 注册玩家连接事件
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+            String playerName = handler.player.getName().getString();
+            LOGGER.info("玩家加入: " + playerName);
             
-            // 即时回放按键
-            while (instantReplayKeyBinding.wasPressed()) {
-                handleInstantReplayKeyPressed(client);
+            // 检查玩家是否在白名单/黑名单中
+            if (shouldRecordPlayer(playerName)) {
+                // 开始录制玩家
+                boolean success = ReplayManager.startRecording(handler.player);
+                if (success) {
+                    LOGGER.info("开始录制玩家: " + playerName);
+                    
+                    // 发送通知给管理员
+                    if (config.isNotifyAdmins()) {
+                        sendMessageToAdmins(Text.translatable("message.iseeyou.recording_started_for", playerName));
+                    }
+                }
+            } else {
+                LOGGER.info("玩家" + playerName + "不在录制列表中，跳过录制");
             }
         });
         
-        // 如果配置了自动开始录制，则在游戏启动后自动开始录制
-        if (config.isAutoStart() && ReplayManager.isAutoRecordEnabled()) {
-            ClientTickEvents.END_CLIENT_TICK.register(new ClientTickEvents.EndTick() {
-                private boolean initialized = false;
+        // 注册玩家断开连接事件
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+            String playerName = handler.player.getName().getString();
+            LOGGER.info("玩家断开连接: " + playerName);
+            
+            // 停止录制
+            String fileName = ReplayManager.stopRecording(handler.player);
+            if (fileName != null) {
+                LOGGER.info("已停止录制玩家" + playerName + "，保存到: " + fileName);
                 
-                @Override
-                public void onEndTick(MinecraftClient client) {
-                    // 确保玩家已加载并且只执行一次
-                    if (!initialized && client.player != null) {
-                        initialized = true;
-                        // 启动录制
-                        boolean success = ReplayManager.startRecording(client);
-                        if (success) {
-                            LOGGER.info("已自动开始录制");
-                            if (config.isShowNotifications()) {
-                                client.player.sendMessage(
-                                    Text.translatable("message.iseeyou.recording_started"), 
-                                    true
-                                );
-                            }
-                        }
-                    }
+                // 发送通知给管理员
+                if (config.isNotifyAdmins()) {
+                    sendMessageToAdmins(Text.translatable("message.iseeyou.recording_stopped_for", playerName, fileName));
                 }
-            });
-        }
+            }
+        });
 
         LOGGER.info("ISeeYou Mod初始化完成!");
     }
     
     /**
-     * 处理录制按键事件
+     * 检查玩家是否应该被录制
+     * 根据配置的黑白名单决定
      */
-    private void handleRecordKeyPressed(MinecraftClient client) {
-        LOGGER.info("录制按键被按下");
-        
-        // 如果有玩家实体，才执行录制功能
-        if (client.player != null) {
-            if (ReplayManager.isRecording()) {
-                // 如果正在录制，则停止并保存
-                String fileName = ReplayManager.stopRecording(client);
-                LOGGER.info("已停止录制并保存: " + fileName);
-            } else {
-                // 如果没在录制，则开始新录制
-                boolean success = ReplayManager.startRecording(client);
-                if (success) {
-                    LOGGER.info("已开始新录制");
-                    if (config.isShowNotifications()) {
-                        client.player.sendMessage(
-                            Text.translatable("message.iseeyou.recording_started"), 
-                            true
-                        );
-                    }
-                } else {
-                    LOGGER.warn("无法开始录制");
+    private boolean shouldRecordPlayer(String playerName) {
+        if ("blacklist".equals(config.getRecordMode())) {
+            // 黑名单模式：如果玩家在黑名单中，不录制
+            for (String name : config.getBlacklist()) {
+                if (name.equalsIgnoreCase(playerName)) {
+                    return false;
                 }
             }
+            return true; // 不在黑名单中，可以录制
+        } else {
+            // 白名单模式：只有在白名单中的玩家才录制
+            for (String name : config.getWhitelist()) {
+                if (name.equalsIgnoreCase(playerName)) {
+                    return true;
+                }
+            }
+            return config.getWhitelist().length == 0; // 如果白名单为空，录制所有玩家
         }
     }
     
     /**
-     * 处理即时回放按键事件
+     * 向所有管理员发送消息
      */
-    private void handleInstantReplayKeyPressed(MinecraftClient client) {
-        LOGGER.info("即时回放按键被按下");
-        
-        // 如果有玩家实体，才执行即时回放功能
-        if (client.player != null && config.isEnableInstantReplay()) {
-            boolean success = ReplayManager.createInstantReplay(client);
-            if (success) {
-                LOGGER.info("已创建即时回放");
-                if (config.isShowNotifications()) {
-                    client.player.sendMessage(
-                        Text.translatable("message.iseeyou.instant_replay_saved"), 
-                        true
-                    );
+    private void sendMessageToAdmins(Text message) {
+        if (server != null) {
+            server.getPlayerManager().getPlayerList().forEach(player -> {
+                if (player.hasPermissionLevel(2)) { // 检查是否是OP
+                    player.sendMessage(message);
                 }
-            } else {
-                LOGGER.warn("无法创建即时回放");
-            }
+            });
         }
+    }
+    
+    /**
+     * 获取服务器实例
+     */
+    public static MinecraftServer getServer() {
+        return server;
     }
 } 

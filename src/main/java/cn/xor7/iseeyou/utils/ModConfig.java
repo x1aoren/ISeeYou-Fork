@@ -7,13 +7,17 @@ package cn.xor7.iseeyou.utils;
 public class ModConfig {
     private String recordingPath = "replay/recordings";
     private String instantReplayPath = "replay/instant";
-    private boolean showNotifications = true;
     private boolean autoStart = true;
     private int replayMinutes = 5;
     private boolean enableInstantReplay = true;
     private String[] blacklist = new String[0];
     private String[] whitelist = new String[0];
     private String recordMode = "blacklist"; // 可选值: blacklist, whitelist
+    private boolean notifyAdmins = true; // 是否通知管理员录制状态
+    private boolean recordChat = true; // 是否记录聊天信息
+    private boolean saveOnPlayerQuit = true; // 玩家退出时是否保存回放
+    private boolean autoCleanup = false; // 是否自动清理旧回放
+    private int cleanupDays = 7; // 多少天前的回放会被清理
     
     public ModConfig() {
         // 默认配置
@@ -48,28 +52,14 @@ public class ModConfig {
     }
     
     /**
-     * 是否显示通知
-     */
-    public boolean isShowNotifications() {
-        return showNotifications;
-    }
-    
-    /**
-     * 设置是否显示通知
-     */
-    public void setShowNotifications(boolean showNotifications) {
-        this.showNotifications = showNotifications;
-    }
-    
-    /**
-     * 是否在游戏启动时自动开始录制
+     * 是否在服务器启动时自动开始录制
      */
     public boolean isAutoStart() {
         return autoStart;
     }
     
     /**
-     * 设置是否在游戏启动时自动开始录制
+     * 设置是否在服务器启动时自动开始录制
      */
     public void setAutoStart(boolean autoStart) {
         this.autoStart = autoStart;
@@ -143,5 +133,75 @@ public class ModConfig {
      */
     public void setRecordMode(String recordMode) {
         this.recordMode = recordMode;
+    }
+    
+    /**
+     * 是否通知管理员录制状态
+     */
+    public boolean isNotifyAdmins() {
+        return notifyAdmins;
+    }
+    
+    /**
+     * 设置是否通知管理员录制状态
+     */
+    public void setNotifyAdmins(boolean notifyAdmins) {
+        this.notifyAdmins = notifyAdmins;
+    }
+    
+    /**
+     * 是否记录聊天信息
+     */
+    public boolean isRecordChat() {
+        return recordChat;
+    }
+    
+    /**
+     * 设置是否记录聊天信息
+     */
+    public void setRecordChat(boolean recordChat) {
+        this.recordChat = recordChat;
+    }
+    
+    /**
+     * 玩家退出时是否保存回放
+     */
+    public boolean isSaveOnPlayerQuit() {
+        return saveOnPlayerQuit;
+    }
+    
+    /**
+     * 设置玩家退出时是否保存回放
+     */
+    public void setSaveOnPlayerQuit(boolean saveOnPlayerQuit) {
+        this.saveOnPlayerQuit = saveOnPlayerQuit;
+    }
+    
+    /**
+     * 是否自动清理旧回放
+     */
+    public boolean isAutoCleanup() {
+        return autoCleanup;
+    }
+    
+    /**
+     * 设置是否自动清理旧回放
+     */
+    public void setAutoCleanup(boolean autoCleanup) {
+        this.autoCleanup = autoCleanup;
+    }
+    
+    /**
+     * 获取清理天数
+     */
+    public int getCleanupDays() {
+        return cleanupDays;
+    }
+    
+    /**
+     * 设置清理天数
+     */
+    public void setCleanupDays(int cleanupDays) {
+        this.cleanupDays = cleanupDays;
     }
 } 

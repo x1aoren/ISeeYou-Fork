@@ -64,9 +64,6 @@ dependencies {
     // 添加Gson依赖
     implementation("com.google.code.gson:gson:2.10.1")
     annotationProcessor("com.google.code.gson:gson:2.10.1")
-
-    // 使用JitPack的ReplayMod依赖
-    implementation("com.github.ReplayMod:ReplayMod:1.21.1-2.6.14")
 }
 
 val targetJavaVersion = 21 // 保持Java 21版本
@@ -131,6 +128,12 @@ loom {
     runs {
         // 为所有运行配置添加调试属性
         configureEach {
+            property("fabric.log.level", "debug")
+        }
+        
+        // 添加服务器运行配置
+        create("server") {
+            server()
             property("fabric.log.level", "debug")
         }
     }

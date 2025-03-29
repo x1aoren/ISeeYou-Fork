@@ -7,5 +7,14 @@
   "message.iseeyou.replay_saved": "回放已保存: %s",
   "message.iseeyou.instant_replay_saved": "即时回放已保存",
   "message.iseeyou.error.recording": "录制出错",
-  "message.iseeyou.error.saving": "保存回放出错"
+  "message.iseeyou.error.saving": "保存回放出错",
+  "message.iseeyou.recording_started_for": "开始录制玩家 %s",
+  "message.iseeyou.recording_stopped_for": "已停止录制玩家 %s，保存到 %s",
+  "message.iseeyou.command.not_player": "该指令只能由玩家执行",
+  "message.iseeyou.command.invalid_player": "无效的玩家",
+  "message.iseeyou.command.started": "开始录制玩家 %s",
+  "message.iseeyou.command.stopped": "已停止录制玩家 %s",
+  "message.iseeyou.command.list": "当前正在录制的玩家：%s",
+  "message.iseeyou.command.no_recordings": "当前没有正在进行的录制",
+  "message.iseeyou.command.usage": "用法：/iseeyou <start|stop|list> [玩家名]"
 } 

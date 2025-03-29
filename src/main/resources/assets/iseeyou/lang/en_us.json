@@ -7,5 +7,14 @@
   "message.iseeyou.replay_saved": "Replay saved: %s",
   "message.iseeyou.instant_replay_saved": "Instant replay saved",
   "message.iseeyou.error.recording": "Error recording",
-  "message.iseeyou.error.saving": "Error saving replay"
+  "message.iseeyou.error.saving": "Error saving replay",
+  "message.iseeyou.recording_started_for": "Started recording player %s",
+  "message.iseeyou.recording_stopped_for": "Stopped recording player %s, saved to %s",
+  "message.iseeyou.command.not_player": "This command can only be executed by a player",
+  "message.iseeyou.command.invalid_player": "Invalid player",
+  "message.iseeyou.command.started": "Started recording player %s",
+  "message.iseeyou.command.stopped": "Stopped recording player %s",
+  "message.iseeyou.command.list": "Currently recording players: %s",
+  "message.iseeyou.command.no_recordings": "No active recordings",
+  "message.iseeyou.command.usage": "Usage: /iseeyou <start|stop|list> [player name]"
 } 

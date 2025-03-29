@@ -3,7 +3,7 @@
   "id": "iseeyou",
   "version": "${version}",
   "name": "ISeeYou",
-  "description": "一个玩家行为录制和回放的Fabric MOD",
+  "description": "一个玩家行为录制和回放的Fabric服务器MOD",
   "authors": [
     "xor7"
   ],
@@ -13,9 +13,9 @@
   },
   "license": "GPL-3.0",
   "icon": "assets/iseeyou/icon.png",
-  "environment": "client",
+  "environment": "server",
   "entrypoints": {
-    "client": [
+    "main": [
       "cn.xor7.iseeyou.ISeeYouClient"
     ]
   },
