@@ -23,6 +23,7 @@ import java.time.format.DateTimeFormatter;
 public class ISeeYouClient implements ModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger("iseeyou");
     public static final String MOD_ID = "iseeyou";
+    public static final String VERSION = "1.3.5"; // 模组版本
     public static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
     private static ModConfig config;
     private static MinecraftServer server;
@@ -52,10 +53,11 @@ public class ISeeYouClient implements ModInitializer {
         
         // 初始化回放管理器
         ReplayManager.initialize();
+        ReplayManager.setConfig(config);
         
         // 注册服务器生命周期事件
         ServerLifecycleEvents.SERVER_STARTING.register(server -> {
-            this.server = server;
+            ISeeYouClient.server = server;
             LOGGER.info("服务器启动中，初始化录制系统...");
         });
         
@@ -148,5 +150,12 @@ public class ISeeYouClient implements ModInitializer {
      */
     public static MinecraftServer getServer() {
         return server;
+    }
+    
+    /**
+     * 获取模组版本
+     */
+    public static String getVersion() {
+        return VERSION;
     }
 } 
