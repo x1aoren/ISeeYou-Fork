@@ -1,7 +1,11 @@
 {
+  "category.iseeyou.general": "ISeeYou",
+  "key.iseeyou.record": "开始/停止录制",
   "key.iseeyou.instant_replay": "即时回放",
-  "category.iseeyou.general": "ISeeYou 模组",
-  "message.iseeyou.replay_started": "开始录制即时回放...",
   "message.iseeyou.recording_started": "开始录制...",
-  "message.iseeyou.replay_saved": "即时回放已保存: %s"
+  "message.iseeyou.recording_stopped": "录制已停止",
+  "message.iseeyou.replay_saved": "回放已保存: %s",
+  "message.iseeyou.instant_replay_saved": "即时回放已保存",
+  "message.iseeyou.error.recording": "录制出错",
+  "message.iseeyou.error.saving": "保存回放出错"
 } 

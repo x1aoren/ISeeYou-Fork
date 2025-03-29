@@ -1,7 +1,11 @@
 {
+  "category.iseeyou.general": "ISeeYou",
+  "key.iseeyou.record": "Start/Stop Recording",
   "key.iseeyou.instant_replay": "Instant Replay",
-  "category.iseeyou.general": "ISeeYou Mod",
-  "message.iseeyou.replay_started": "Starting instant replay recording...",
   "message.iseeyou.recording_started": "Recording started...",
-  "message.iseeyou.replay_saved": "Instant replay saved: %s"
+  "message.iseeyou.recording_stopped": "Recording stopped",
+  "message.iseeyou.replay_saved": "Replay saved: %s",
+  "message.iseeyou.instant_replay_saved": "Instant replay saved",
+  "message.iseeyou.error.recording": "Error recording",
+  "message.iseeyou.error.saving": "Error saving replay"
 } 

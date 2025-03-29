@@ -20,11 +20,12 @@ import java.time.format.DateTimeFormatter;
 
 /**
  * ISeeYou Fabric Mod主类
- * 实现即时回放功能的客户端模组，集成ReplayMod API
+ * 实现即时回放功能的客户端模组，集成ReplayMod功能
  */
 public class ISeeYouClient implements ClientModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger("iseeyou");
-    private static KeyBinding keyBinding;
+    private static KeyBinding recordKeyBinding;
+    private static KeyBinding instantReplayKeyBinding;
     public static final String MOD_ID = "iseeyou";
     public static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
     private static ModConfig config;
@@ -46,26 +47,46 @@ public class ISeeYouClient implements ClientModInitializer {
             LOGGER.info("创建录制目录: " + recordingDir.getAbsolutePath());
         }
         
+        File instantDir = new File(config.getInstantReplayPath());
+        if (!instantDir.exists()) {
+            instantDir.mkdirs();
+            LOGGER.info("创建即时回放目录: " + instantDir.getAbsolutePath());
+        }
+        
         // 初始化回放管理器
         ReplayManager.initialize();
         
-        // 注册按键绑定
-        keyBinding = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+        // 注册按键绑定 - 开始/停止录制
+        recordKeyBinding = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.iseeyou.record", // 翻译键
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_F8, // 默认为F8键
+                "category.iseeyou.general" // 翻译键
+        ));
+        
+        // 注册按键绑定 - 即时回放
+        instantReplayKeyBinding = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.iseeyou.instant_replay", // 翻译键
                 InputUtil.Type.KEYSYM,
-                GLFW.GLFW_KEY_R, // 默认为R键
+                GLFW.GLFW_KEY_F9, // 默认为F9键
                 "category.iseeyou.general" // 翻译键
         ));
 
         // 注册按键事件
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            while (keyBinding.wasPressed()) {
-                handleReplayKeyPressed(client);
+            // 录制按键
+            while (recordKeyBinding.wasPressed()) {
+                handleRecordKeyPressed(client);
+            }
+            
+            // 即时回放按键
+            while (instantReplayKeyBinding.wasPressed()) {
+                handleInstantReplayKeyPressed(client);
             }
         });
         
         // 如果配置了自动开始录制，则在游戏启动后自动开始录制
-        if (config.isAutoStart()) {
+        if (config.isAutoStart() && ReplayManager.isAutoRecordEnabled()) {
             ClientTickEvents.END_CLIENT_TICK.register(new ClientTickEvents.EndTick() {
                 private boolean initialized = false;
                 
@@ -80,7 +101,7 @@ public class ISeeYouClient implements ClientModInitializer {
                             LOGGER.info("已自动开始录制");
                             if (config.isShowNotifications()) {
                                 client.player.sendMessage(
-                                    Text.translatable("message.iseeyou.replay_started"), 
+                                    Text.translatable("message.iseeyou.recording_started"), 
                                     true
                                 );
                             }
@@ -94,12 +115,12 @@ public class ISeeYouClient implements ClientModInitializer {
     }
     
     /**
-     * 处理按下快捷键的事件
+     * 处理录制按键事件
      */
-    private void handleReplayKeyPressed(MinecraftClient client) {
-        LOGGER.info("按键被按下，触发即时回放功能");
+    private void handleRecordKeyPressed(MinecraftClient client) {
+        LOGGER.info("录制按键被按下");
         
-        // 如果有玩家实体，才执行回放功能
+        // 如果有玩家实体，才执行录制功能
         if (client.player != null) {
             if (ReplayManager.isRecording()) {
                 // 如果正在录制，则停止并保存
@@ -119,6 +140,29 @@ public class ISeeYouClient implements ClientModInitializer {
                 } else {
                     LOGGER.warn("无法开始录制");
                 }
+            }
+        }
+    }
+    
+    /**
+     * 处理即时回放按键事件
+     */
+    private void handleInstantReplayKeyPressed(MinecraftClient client) {
+        LOGGER.info("即时回放按键被按下");
+        
+        // 如果有玩家实体，才执行即时回放功能
+        if (client.player != null && config.isEnableInstantReplay()) {
+            boolean success = ReplayManager.createInstantReplay(client);
+            if (success) {
+                LOGGER.info("已创建即时回放");
+                if (config.isShowNotifications()) {
+                    client.player.sendMessage(
+                        Text.translatable("message.iseeyou.instant_replay_saved"), 
+                        true
+                    );
+                }
+            } else {
+                LOGGER.warn("无法创建即时回放");
             }
         }
     }
