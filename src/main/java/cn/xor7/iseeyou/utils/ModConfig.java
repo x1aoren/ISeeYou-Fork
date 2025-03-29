@@ -1,26 +1,72 @@
 package cn.xor7.iseeyou.utils;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.annotations.Expose;
+
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+
 /**
  * ISeeYou模组的配置类
  * 存储与回放录制相关的各种设置
  */
 public class ModConfig {
-    private String recordingPath = "replay/recordings";
-    private String instantReplayPath = "replay/instant";
-    private boolean autoStart = true;
-    private int replayMinutes = 5;
-    private boolean enableInstantReplay = true;
-    private String[] blacklist = new String[0];
-    private String[] whitelist = new String[0];
-    private String recordMode = "blacklist"; // 可选值: blacklist, whitelist
-    private boolean notifyAdmins = true; // 是否通知管理员录制状态
-    private boolean recordChat = true; // 是否记录聊天信息
-    private boolean saveOnPlayerQuit = true; // 玩家退出时是否保存回放
-    private boolean autoCleanup = false; // 是否自动清理旧回放
-    private int cleanupDays = 7; // 多少天前的回放会被清理
+    @Expose private String recordingPath = "replay/recordings";
+    @Expose private String instantReplayPath = "replay/instant";
+    @Expose private boolean autoStart = true;
+    @Expose private int replayMinutes = 5;
+    @Expose private boolean enableInstantReplay = true;
+    @Expose private String[] blacklist = new String[0];
+    @Expose private String[] whitelist = new String[0];
+    @Expose private String recordMode = "blacklist"; // 可选值: blacklist, whitelist
+    @Expose private boolean notifyAdmins = true; // 是否通知管理员录制状态
+    @Expose private boolean recordChat = true; // 是否记录聊天信息
+    @Expose private boolean saveOnPlayerQuit = true; // 玩家退出时是否保存回放
+    @Expose private boolean autoCleanup = false; // 是否自动清理旧回放
+    @Expose private int cleanupDays = 7; // 多少天前的回放会被清理
+    
+    private static final Gson GSON = new GsonBuilder()
+            .excludeFieldsWithoutExposeAnnotation()
+            .setPrettyPrinting()
+            .create();
     
     public ModConfig() {
         // 默认配置
+    }
+    
+    /**
+     * 从文件加载配置
+     */
+    public static ModConfig load(File file) {
+        if (file.exists()) {
+            try (FileReader reader = new FileReader(file)) {
+                return GSON.fromJson(reader, ModConfig.class);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return new ModConfig();
+    }
+    
+    /**
+     * 保存配置到文件
+     */
+    public void save(File file) {
+        try {
+            File parent = file.getParentFile();
+            if (!parent.exists()) {
+                parent.mkdirs();
+            }
+            
+            try (FileWriter writer = new FileWriter(file)) {
+                GSON.toJson(this, writer);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
     
     /**
