@@ -19,6 +19,9 @@
       "cn.xor7.iseeyou.ISeeYouClient"
     ]
   },
+  "mixins": [
+    "iseeyou.mixins.json"
+  ],
   "depends": {
     "fabricloader": ">=${loader_version}",
     "fabric-api": "*",
