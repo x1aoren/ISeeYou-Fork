@@ -3,7 +3,7 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 plugins {
     id("java")
     id("io.github.goooler.shadow") version "8.1.7"
-    id("fabric-loom") version "1.4.+"
+    id("fabric-loom") version "1.4.1"
     kotlin("jvm") version "1.9.22"
 }
 
@@ -130,6 +130,11 @@ loom {
         configureEach {
             property("fabric.log.level", "debug")
         }
+    }
+    
+    mixin {
+        defaultRefmapName.set("iseeyou-refmap.json")
+        useLegacyMixinAp.set(false)
     }
 }
 
