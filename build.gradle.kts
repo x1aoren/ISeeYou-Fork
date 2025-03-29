@@ -42,6 +42,8 @@ repositories {
         name = "Aliyun Maven"
         url = uri("https://maven.aliyun.com/repository/public")
     }
+    maven { url = uri("https://repo.repsy.io/mvn/deftware/replaymod") }
+    maven { url = uri("https://repo.fabric.mc/repository/public") }
 }
 
 dependencies {
@@ -64,6 +66,9 @@ dependencies {
     // 添加Gson依赖
     implementation("com.google.code.gson:gson:2.10.1")
     annotationProcessor("com.google.code.gson:gson:2.10.1")
+
+    // ReplayMod依赖
+    implementation("com.github.replaymod:replaymod:1.21-2.6.14")
 }
 
 val targetJavaVersion = 21 // 保持Java 21版本

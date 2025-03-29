@@ -1,0 +1,7 @@
+{
+  "key.iseeyou.instant_replay": "Instant Replay",
+  "category.iseeyou.general": "ISeeYou Mod",
+  "message.iseeyou.replay_started": "Starting instant replay recording...",
+  "message.iseeyou.recording_started": "Recording started...",
+  "message.iseeyou.replay_saved": "Instant replay saved: %s"
+} 
