@@ -113,10 +113,13 @@ kotlin {
     jvmToolchain(21)
 }
 
+// 使用正确的语法配置Loom
 loom {
-    log.level = "debug"
-    runConfigs.all {
-        this.property("fabric.log.level", "debug")
+    runs {
+        // 为所有运行配置添加调试属性
+        configureEach {
+            property("fabric.log.level", "debug")
+        }
     }
 }
 
