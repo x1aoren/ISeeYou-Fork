@@ -9,7 +9,6 @@ data class ConfigData(
     var filter: FilterConfig = FilterConfig(),
     var recordPath: String = "replay/player/\${name}@\${uuid}",
     var clearOutdatedRecordFile: OutdatedRecordRetentionConfig = OutdatedRecordRetentionConfig(),
-    var recordSuspiciousPlayer: RecordSuspiciousPlayerConfig = RecordSuspiciousPlayerConfig(),
     var instantReplay: InstantReplayConfig = InstantReplayConfig(),
     var asyncSave: Boolean = false,
     var bStats: Boolean = true,
@@ -61,18 +60,6 @@ data class OutdatedRecordRetentionConfig(
     var enabled: Boolean = false,
     var interval: Int = 24,
     var days: Int = 7,
-)
-
-data class RecordSuspiciousPlayerConfig(
-    var enableThemisIntegration: Boolean = false,
-    var enableMatrixIntegration: Boolean = false,
-    var enableVulcanIntegration: Boolean = false,
-    var enableNegativityIntegration: Boolean = false,
-    var enableGrimACIntegration: Boolean = false,
-    var enableLightAntiCheatIntegration: Boolean = false,
-    var enableSpartanIntegration: Boolean = false,
-    var recordMinutes: Long = 5,
-    var recordPath: String = "replay/suspicious/\${name}@\${uuid}",
 )
 
 data class FilterConfig(

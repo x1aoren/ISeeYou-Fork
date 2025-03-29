@@ -1,9 +1,5 @@
 package cn.xor7.iseeyou
 
-import cn.xor7.iseeyou.anticheat.AntiCheatListener
-import cn.xor7.iseeyou.anticheat.EventListener
-import cn.xor7.iseeyou.anticheat.listeners.*
-import cn.xor7.iseeyou.anticheat.suspiciousPhotographers
 import cn.xor7.iseeyou.utils.ConfigData
 import cn.xor7.iseeyou.utils.InstantReplayManager
 import cn.xor7.iseeyou.utils.TomlEx
@@ -79,8 +75,6 @@ class ISeeYou : JavaPlugin(), CommandExecutor {
                 }
             }
 
-            EventListener.pauseRecordingOnHighSpeedThresholdPerTickSquared = (toml!!.data.pauseRecordingOnHighSpeed.threshold / 20).pow(2.0)
-
             // 清理过期记录文件
             if (toml!!.data.clearOutdatedRecordFile.enabled) {
                 cleanOutdatedRecordings()
@@ -94,7 +88,8 @@ class ISeeYou : JavaPlugin(), CommandExecutor {
                 }.runTaskTimer(this, 0, 20 * 60 * 60 * interval.toLong())
             }
 
-            Bukkit.getPluginManager().registerEvents(EventListener, this)
+            // 注册事件监听器
+            Bukkit.getPluginManager().registerEvents(EventListener(), this)
         } else {
             logError("配置初始化失败，插件无法启用。")
             Bukkit.getPluginManager().disablePlugin(this)
@@ -107,58 +102,9 @@ class ISeeYou : JavaPlugin(), CommandExecutor {
             metrics.addCustomChart(Metrics.SimplePie("chart_id") { "My value" })
         }
 
-        // 注册反作弊监听器
-        Bukkit.getPluginManager().registerEvents(AntiCheatListener, this)
-
-        // 注册第三方插件监听器
-        registerThirdPartyListeners()
-
         // 更新检查
         if (toml!!.data.check_for_updates) {
             checkForUpdates()
-        }
-    }
-
-    private fun registerThirdPartyListeners() {
-        if (Bukkit.getPluginManager().isPluginEnabled("Themis") && toml!!.data.recordSuspiciousPlayer.enableThemisIntegration) {
-            Bukkit.getPluginManager().registerEvents(ThemisListener(), this)
-            logInfo("注册 Themis 监听器...")
-        }
-
-        if (Bukkit.getPluginManager().isPluginEnabled("Matrix") && toml!!.data.recordSuspiciousPlayer.enableMatrixIntegration) {
-            Bukkit.getPluginManager().registerEvents(MatrixListener(), this)
-            logInfo("注册 Matrix 监听器...")
-        }
-
-        if (Bukkit.getPluginManager()
-                .isPluginEnabled("Vulcan") && toml!!.data.recordSuspiciousPlayer.enableVulcanIntegration
-        ) {
-            Bukkit.getPluginManager().registerEvents(VulcanListener(), this)
-            logInfo("注册 Vulcan 监听器...")
-        }
-
-        if (Bukkit.getPluginManager().isPluginEnabled("Negativity") && toml!!.data.recordSuspiciousPlayer.enableNegativityIntegration) {
-            Bukkit.getPluginManager().registerEvents(NegativityListener(), this)
-            logInfo("注册 Negativity 监听器...")
-        }
-
-        if (Bukkit.getPluginManager().isPluginEnabled("GrimAC") && toml!!.data.recordSuspiciousPlayer.enableGrimACIntegration) {
-            Bukkit.getPluginManager().registerEvents(GrimACListener(), this)
-            logInfo("注册 GrimAC 监听器...")
-        }
-
-        if (Bukkit.getPluginManager()
-                .isPluginEnabled("LightAntiCheat") && toml!!.data.recordSuspiciousPlayer.enableLightAntiCheatIntegration
-        ) {
-            Bukkit.getPluginManager().registerEvents(LightAntiCheatListener(), this)
-            logInfo("注册 LightAntiCheat 监听器...")
-        }
-
-        if (Bukkit.getPluginManager()
-                .isPluginEnabled("Spartan") && toml!!.data.recordSuspiciousPlayer.enableSpartanIntegration
-        ) {
-            Bukkit.getPluginManager().registerEvents(SpartanListener(), this)
-            logInfo("注册 Spartan 监听器...")
         }
     }
 
@@ -260,7 +206,7 @@ class ISeeYou : JavaPlugin(), CommandExecutor {
             .replace("\${name}", "$name@Command")
             .replace("\${uuid}", uuid)
         File(recordPath).mkdirs()
-        val recordFile = File(recordPath + "/" + currentTime.format(EventListener.DATE_FORMATTER) + ".mcpr")
+        val recordFile = File(recordPath + "/" + currentTime.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss")) + ".mcpr")
         if (recordFile.exists()) recordFile.delete()
         recordFile.createNewFile()
         photographer.setRecordFile(recordFile)
@@ -302,20 +248,9 @@ class ISeeYou : JavaPlugin(), CommandExecutor {
         try {
             val recordPathA: String = toml!!.data.recordPath
             val recordingsDirA = Paths.get(recordPathA).parent
-            val recordingsDirB: Path? =
-                if (toml!!.data.recordSuspiciousPlayer.enableMatrixIntegration || toml!!.data.recordSuspiciousPlayer.enableThemisIntegration) {
-                    Paths.get(toml!!.data.recordSuspiciousPlayer.recordPath).parent
-                } else {
-                    null
-                }
 
-            logInfo("开始删除过期的记录文件在 $recordingsDirA 和 $recordingsDirB")
-            var deletedCount = 0
-
-            deletedCount += deleteFilesInDirectory(recordingsDirA)
-            recordingsDirB?.let {
-                deletedCount += deleteFilesInDirectory(it)
-            }
+            logInfo("开始删除过期的记录文件在 $recordingsDirA")
+            val deletedCount = deleteFilesInDirectory(Paths.get(recordingsDirA))
 
             logInfo("已删除过期的记录文件，删除了 $deletedCount 个文件")
         } catch (e: IOException) {
@@ -392,7 +327,6 @@ class ISeeYou : JavaPlugin(), CommandExecutor {
         }
         photographers.clear()
         highSpeedPausedPhotographers.clear()
-        suspiciousPhotographers.clear()
         instance = null
     }
 

@@ -22,22 +22,7 @@ ISeeYou 可以利用 [Leaves](https://leavesmc.org/) 和 [Leaf](https://github.c
 
 - **自动录制**：无需手动操作，默认情况下插件会自动记录所有玩家。
 - **灵活配置**：可以通过配置文件设置黑白名单，以及录制路径等。
-- **反作弊支持**：适配多款反作弊插件，在发现可疑玩家时自动进行录制。
 - **即时回放**：通过指令可追溯过去一段时间的游戏画面以 `.mcpr` 格式保存到服务器硬盘上。
-
-## 反作弊适配
-
-| 名称                                                                                                                                            | 可用状况   |
-|-----------------------------------------------------------------------------------------------------------------------------------------------|--------|
-| [Themis Anti Cheat](https://www.spigotmc.org/resources/themis-anti-cheat-1-17-1-20-bedrock-support-paper-compatibility-free-optimized.90766/) | ✅ 可用   |
-| [Matrix](https://matrix.rip/)                                                                                                                 | ✅ 可用   |
-| [Vulcan Anti-Cheat](https://www.spigotmc.org/resources/vulcan-anti-cheat-advanced-cheat-detection-1-7-1-20-4.83626/)                          | ⚠️ 公测中 |
-| [AC - Negativity](https://www.spigotmc.org/resources/ac-negativity-spigot-1-8-1-20-bungeecord-velocity.48399/)                                | ⚠️ 公测中 |
-| [Grim Anticheat](https://www.spigotmc.org/resources/grim-anticheat.99923/)                                                                    | ⚠️ 公测中 |
-| [LightAntiCheat](https://github.com/tiredvekster/LightAntiCheat)                                                                              | ⚠️ 公测中 |
-
-> [!TIP]
-> 如果您希望我们增加对更多反作弊插件的支持，请创建 [issue](https://github.com/MC-XiaoHei/ISeeYou/issues) 进行反馈！
 
 ## 推荐版本
 
@@ -62,24 +47,15 @@ ISeeYou 可以利用 [Leaves](https://leavesmc.org/) 和 [Leaf](https://github.c
 
 ### 依赖项
 
-| **依赖项**                                                                                                                                       | **可选性** |
-|:----------------------------------------------------------------------------------------------------------------------------------------------|:-------:|
-| 服务端 [**Leaves**](https://leavesmc.org/) 或 [**Leaf**](https://github.com/Winds-Studio/Leaf)                                                    | **必需**  |
-| [Themis Anti Cheat](https://www.spigotmc.org/resources/themis-anti-cheat-1-17-1-20-bedrock-support-paper-compatibility-free-optimized.90766/) |  💡 可选  |
-| [Matrix AntiCheat](https://matrix.rip/)                                                                                                       |  💡 可选  |
-| [Vulcan Anti-Cheat](https://www.spigotmc.org/resources/vulcan-anti-cheat-advanced-cheat-detection-1-7-1-20-4.83626/)                          |  💡 可选  |
-| [AC - Negativity](https://www.spigotmc.org/resources/ac-negativity-spigot-1-8-1-20-bungeecord-velocity.48399/)                                |  💡 可选  |
-| [Grim Anticheat](https://www.spigotmc.org/resources/grim-anticheat.99923/)                                                                    |  💡 可选  |
-| [LightAntiCheat](https://github.com/tiredvekster/LightAntiCheat)                                                                              |  💡 可选  |
-
-> [!IMPORTANT]
-> 在安装反作弊插件之前，也请确认它们所需的前置插件是否已经安装，以避免兼容性问题。
+| **依赖项**                                                                            | **可选性** |
+|:-----------------------------------------------------------------------------------|:-------:|
+| 服务端 [**Leaves**](https://leavesmc.org/) 或 [**Leaf**](https://github.com/Winds-Studio/Leaf) | **必需**  |
 
 ### 使用教程
 
 1. **安装插件**：将插件文件放置在 Leaves 或 Leaf 服务器的插件目录下，并重新启动服务器。
 
-2. **配置设置**：编辑 `plugins/ISeeYou/config.toml` 文件，根据需求调整录像参数和反作弊设置。
+2. **配置设置**：编辑 `plugins/ISeeYou/config.toml` 文件，根据需求调整录像参数。
 
 ## 配置项说明
 
@@ -110,17 +86,6 @@ enabled = false  # 是否启用定期清理过期录像文件功能
 interval = 24  # 清理间隔时间（单位：小时）
 days = 7  # 过时录像文件保留天数
 
-# [recordSuspiciousPlayer] 录制可疑玩家设置
-[recordSuspiciousPlayer]
-enableThemisIntegration = false  # 是否启用监视 Themis 报告的可疑玩家录制功能
-enableMatrixIntegration = false  # 是否启用监视 Matrix 报告的可疑玩家录制功能
-enableVulcanIntegration = false  # 是否启用监视 Vulcan 报告的可疑玩家录制功能
-enableNegativityIntegration = false  # 是否启用监视 Negativity 报告的可疑玩家录制功能
-enableGrimACIntegration = false  # 是否启用监视 GrimAC 报告的可疑玩家录制功能
-enableLightAntiCheatIntegration = false  # 是否启用监视 LightAntiCheat 报告的可疑玩家录制功能
-recordMinutes = 5  # 对可疑玩家自动录制时长（单位：分钟）
-recordPath = "replay/suspicious/${name}@${uuid}"  # 可疑玩家录像文件路径模板，支持 ${name} 和 ${uuid} 变量。
-
 # [instantReplay] 即时回放设置
 [instantReplay]
 enabled = false  # 是否启用即时回放功能
@@ -131,7 +96,7 @@ recordPath = "replay/instant/${name}@${uuid}"  # 存储即时回放录像路径�
 ```
 
 > [!WARNING]
-> 开启即时回放、录制可疑玩家等功能可能会增加服务器性能消耗。
+> 开启即时回放功能可能会增加服务器性能消耗。
 
 ## 指令
 
