@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "iseeyou",
+  "version": "${version}",
+  "name": "ISeeYou",
+  "description": "一个玩家行为录制和回放的Fabric MOD",
+  "authors": [
+    "xor7"
+  ],
+  "contact": {
+    "homepage": "https://github.com/xor7/ISeeYou",
+    "sources": "https://github.com/xor7/ISeeYou"
+  },
+  "license": "GPL-3.0",
+  "icon": "assets/iseeyou/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "cn.xor7.iseeyou.ISeeYouClient"
+    ]
+  },
+  "mixins": [
+    "iseeyou.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric-api": "*",
+    "minecraft": "~${minecraft_version}",
+    "java": ">=17"
+  }
+} 
