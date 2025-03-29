@@ -20,12 +20,8 @@ pluginManagement {
         mavenCentral()
     }
     plugins {
-        id("fabric-loom") version "1.2-SNAPSHOT"
+        id("fabric-loom") version "1.4.+"
     }
-}
-
-plugins {
-    id("org.gradle.toolchains.foojay-resolver-convention") version "0.5.0"
 }
 
 rootProject.name = "iseeyou"
