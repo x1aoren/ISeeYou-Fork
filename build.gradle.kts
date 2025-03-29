@@ -3,8 +3,8 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 plugins {
     id("java")
     id("io.github.goooler.shadow") version "8.1.7"
-    id("fabric-loom") version "1.3.+"
-    kotlin("jvm") version "1.9.20"
+    id("fabric-loom") version "1.4.+"
+    kotlin("jvm") version "1.9.22"
 }
 
 group = "cn.xor7"
@@ -53,11 +53,11 @@ dependencies {
     
     // 其他依赖
     implementation("com.moandjiezana.toml:toml4j:0.7.2")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.0")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.22")
     implementation("net.jodah:expiringmap:0.5.11")
     
     // Shadow配置
-    shadow("org.jetbrains.kotlin:kotlin-stdlib:1.9.0")
+    shadow("org.jetbrains.kotlin:kotlin-stdlib:1.9.22")
     shadow("com.moandjiezana.toml:toml4j:0.7.2")
     shadow("net.jodah:expiringmap:0.5.11")
 }
@@ -120,10 +120,6 @@ loom {
         configureEach {
             property("fabric.log.level", "debug")
         }
-    }
-    
-    mixin {
-        defaultRefmapName.set("iseeyou-refmap.json")
     }
 }
 
