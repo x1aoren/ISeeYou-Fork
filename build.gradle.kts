@@ -131,11 +131,8 @@ loom {
             property("fabric.log.level", "debug")
         }
         
-        // 添加服务器运行配置
-        create("server") {
-            server()
-            property("fabric.log.level", "debug")
-        }
+        // 不需要显式创建server配置，因为Loom已经默认提供
+        // server配置在configureEach中已经设置了属性
     }
     
     mixin {

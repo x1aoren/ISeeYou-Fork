@@ -27,8 +27,5 @@
     "fabric-api": "*",
     "minecraft": "~${minecraft_version}",
     "java": ">=21"
-  },
-  "suggests": {
-    "replaymod": ">=2.6.0"
   }
 } 
