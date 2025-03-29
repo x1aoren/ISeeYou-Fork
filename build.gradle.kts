@@ -121,6 +121,10 @@ loom {
             property("fabric.log.level", "debug")
         }
     }
+    
+    mixin {
+        defaultRefmapName.set("iseeyou-refmap.json")
+    }
 }
 
 // 启用详细的日志输出
