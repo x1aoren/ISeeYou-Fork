@@ -3,7 +3,7 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 plugins {
     id("java")
     id("io.github.goooler.shadow") version "8.1.7"
-    id("fabric-loom") version "1.2-SNAPSHOT"
+    id("fabric-loom") version "1.3.+"
     kotlin("jvm") version "1.9.20"
 }
 
