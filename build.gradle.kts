@@ -61,8 +61,9 @@ dependencies {
     shadow("com.moandjiezana.toml:toml4j:0.7.2")
     shadow("net.jodah:expiringmap:0.5.11")
     
-    // 移除Bukkit相关依赖
-    implementation(annotationProcessor("com.google.code.gson:gson:2.10.1"))
+    // 添加Gson依赖
+    implementation("com.google.code.gson:gson:2.10.1")
+    annotationProcessor("com.google.code.gson:gson:2.10.1")
 }
 
 val targetJavaVersion = 21 // 保持Java 21版本
