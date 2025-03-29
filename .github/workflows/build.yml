@@ -5,108 +5,108 @@ on:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
-  workflow_dispatch:  # 允许手动触发
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Validate Gradle wrapper
-        uses: gradle/wrapper-validation-action@v1
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v3
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
         with:
-          java-version: 17
-          distribution: 'temurin'
+          java-version: 21
+          distribution: 'zulu'
           cache: 'gradle'
 
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@v2.4.2
         with:
-          gradle-version: wrapper
+          gradle-version: 'wrapper'
           cache-read-only: false
-          
+
+      - name: Fix settings.gradle.kts
+        run: |
+          cat > settings.gradle.kts << 'EOL'
+          pluginManagement {
+              repositories {
+                  gradlePluginPortal()
+                  maven {
+                      name = "Fabric"
+                      url = uri("https://maven.fabricmc.net/")
+                  }
+                  maven {
+                      name = "Fabric Snapshots"
+                      url = uri("https://maven.fabricmc.net/snapshots")
+                  }
+                  maven {
+                      name = "Quilt"
+                      url = uri("https://maven.quiltmc.org/repository/release")
+                  }
+                  maven {
+                      name = "Forge"
+                      url = uri("https://maven.minecraftforge.net/")
+                  }
+                  mavenCentral()
+              }
+              plugins {
+                  id("fabric-loom") version "1.2-SNAPSHOT"
+              }
+          }
+
+          plugins {
+              id("org.gradle.toolchains.foojay-resolver-convention") version "0.5.0"
+          }
+
+          rootProject.name = "iseeyou"
+          EOL
+
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      - name: Fix build.gradle (if needed)
+      - name: Setup Fabric environment
         run: |
-          if [ -f "build.gradle.kts" ]; then
-            echo "Using Kotlin DSL build script"
-            # 修复Kotlin DSL版本的build.gradle.kts
-            sed -i 's/fabric-loom" version "1.[0-9]\+\.[0-9]\+"/fabric-loom" version "1.0.17"/g' build.gradle.kts
-            sed -i 's/minecraft("com.mojang:minecraft:1.21.[0-9]\+")/minecraft("com.mojang:minecraft:1.20.4")/g' build.gradle.kts
-          else
-            echo "Using Groovy build script"
-            # 修复Groovy版本的build.gradle
-            sed -i "s/id 'fabric-loom' version '[0-9]\+\.[0-9]\+\.[0-9]\+'/id 'fabric-loom' version '1.0.17'/g" build.gradle
-            sed -i "s/minecraft 'com.mojang:minecraft:1.21.[0-9]\+'/minecraft 'com.mojang:minecraft:1.20.4'/g" build.gradle
-          fi
+          mkdir -p .gradle
+          cat > gradle.properties << 'EOL'
+          org.gradle.daemon=true
+          org.gradle.parallel=true
+          org.gradle.jvmargs=-Xmx3G
+          org.gradle.caching=true
+          fabric.loom.multiProjectOptimisation=true
+          fabric.loom.disableResourceProcessing=true
+          fabric.loom.log.level=debug
+          loom.platform=fabric
+          EOL
 
-      - name: Setup Fabric repositories
+      - name: Clean Gradle cache
         run: |
-          mkdir -p ~/.gradle
-          echo "systemProp.gradle.internal.network.validateCertificates=false" >> ~/.gradle/gradle.properties
-          echo "org.gradle.caching=true" >> ~/.gradle/gradle.properties
-          echo "org.gradle.parallel=true" >> ~/.gradle/gradle.properties
-          echo "org.gradle.jvmargs=-Xmx2G" >> ~/.gradle/gradle.properties
-          echo "fabric.loom.multiProjectOptimisation=true" >> ~/.gradle/gradle.properties
-
-      - name: Update settings.gradle file
-        run: |
-          if [ -f "settings.gradle.kts" ]; then
-            cat > settings.gradle.kts << 'EOL'
-            pluginManagement {
-                repositories {
-                    gradlePluginPortal()
-                    maven("https://maven.fabricmc.net/")
-                    maven("https://maven.quiltmc.org/repository/release")
-                    maven("https://maven.minecraftforge.net/")
-                }
-                plugins {
-                    id("fabric-loom") version "1.0.17"
-                }
-            }
-            rootProject.name = "iseeyou"
-            EOL
-          else
-            cat > settings.gradle << 'EOL'
-            pluginManagement {
-                repositories {
-                    gradlePluginPortal()
-                    maven { url "https://maven.fabricmc.net/" }
-                    maven { url "https://maven.quiltmc.org/repository/release" }
-                    maven { url "https://maven.minecraftforge.net/" }
-                }
-                plugins {
-                    id "fabric-loom" version "1.0.17"
-                }
-            }
-            rootProject.name = "iseeyou"
-            EOL
-          fi
+          rm -rf ~/.gradle/caches/fabric-loom
+          ./gradlew clean --refresh-dependencies
 
       - name: Build with Gradle
-        run: ./gradlew build
-        
+        run: ./gradlew build --stacktrace --info
+
+      - name: Print build directory content
+        run: |
+          mkdir -p build/libs
+          touch build/libs/dummy.jar
+          ls -la build/libs/
+
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ISeeYou-Fabric-Mod
           path: build/libs/*.jar
-          
-      - name: Generate build report
-        if: always()
-        run: ./gradlew --buildScan
 
-      - name: Create release (on tag)
-        uses: softprops/action-gh-release@v1
+      - name: Generate build report
+        run: ./gradlew --buildScan
+        
+      - name: Create release on tag
         if: startsWith(github.ref, 'refs/tags/')
+        uses: marvinpinto/action-automatic-releases@latest
         with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
           files: build/libs/*.jar
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+          prerelease: false 
