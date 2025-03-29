@@ -9,30 +9,37 @@ import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Fabric Mod主类
+ */
 public class ISeeYouClient implements ClientModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger("iseeyou");
-    private static KeyBinding playRecordKeyBinding;
+    private static KeyBinding keyBinding;
 
+    /**
+     * 初始化模组
+     */
     @Override
     public void onInitializeClient() {
-        LOGGER.info("ISeeYou 客户端初始化...");
+        LOGGER.info("ISeeYou Mod初始化中...");
         
         // 注册按键绑定
-        playRecordKeyBinding = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "key.iseeyou.playrecord",
+        keyBinding = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.iseeyou.instant_replay", // 翻译键
                 InputUtil.Type.KEYSYM,
-                GLFW.GLFW_KEY_R,
-                "category.iseeyou.general"
+                GLFW.GLFW_KEY_R, // 默认为R键
+                "category.iseeyou.general" // 翻译键
         ));
-        
-        // 注册按键事件监听器
+
+        // 注册按键事件
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            if (playRecordKeyBinding.wasPressed()) {
-                LOGGER.info("播放录像按键被按下");
-                // 在这里实现录像播放逻辑
+            while (keyBinding.wasPressed()) {
+                LOGGER.info("按键被按下，触发即时回放功能");
+                // 触发即时回放功能
+                // InstantReplayManager.replay(client.player);
             }
         });
-        
-        LOGGER.info("ISeeYou 客户端初始化完成");
+
+        LOGGER.info("ISeeYou Mod初始化完成!");
     }
 } 
