@@ -2,18 +2,28 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 plugins {
     id("java")
-    id("io.github.goooler.shadow") version "8.1.7"
+    id("com.github.johnrengelman.shadow") version "8.1.1"
     id("fabric-loom") version "1.4.1"
     kotlin("jvm") version "1.9.22"
+    id("com.gradle.enterprise") version "3.16.2"
+}
+
+// 配置构建扫描
+gradleEnterprise {
+    buildScan {
+        termsOfServiceUrl = "https://gradle.com/terms-of-service"
+        termsOfServiceAgree = "yes"
+        publishAlways()
+    }
 }
 
 group = "cn.xor7"
 version = "1.3.5"
 
-val minecraftVersion = "1.21.1"
-val yarnMappings = "1.21.1+build.2"
+val minecraftVersion = "1.21"
+val yarnMappings = "1.21+build.5"
 val loaderVersion = "0.15.5"
-val fabricVersion = "0.115.2+1.21.1"
+val fabricVersion = "0.91.5+1.21"
 
 base {
     archivesName.set("iseeyou")
