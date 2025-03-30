@@ -3,7 +3,7 @@ package cn.xor7.iseeyou.commands;
 import cn.xor7.iseeyou.ISeeYouClient;
 import cn.xor7.iseeyou.recording.ReplayManager;
 import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.arguments.StringArgumentument;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.command.argument.Vec3ArgumentType;
@@ -33,7 +33,7 @@ public class PhotographerCommand {
                 
                 // /photographer create <name> [location]
                 .then(CommandManager.literal("create")
-                    .then(CommandManager.argument("name", StringArgumentument.word())
+                    .then(CommandManager.argument("name", StringArgumentType.word())
                         .executes(PhotographerCommand::createCamera)
                         .then(CommandManager.argument("location", Vec3ArgumentType.vec3())
                             .executes(PhotographerCommand::createCameraAtLocation)
@@ -43,7 +43,7 @@ public class PhotographerCommand {
                 
                 // /photographer remove <name>
                 .then(CommandManager.literal("remove")
-                    .then(CommandManager.argument("name", StringArgumentument.word())
+                    .then(CommandManager.argument("name", StringArgumentType.word())
                         .executes(PhotographerCommand::removeCamera)
                     )
                 )
@@ -61,7 +61,7 @@ public class PhotographerCommand {
     private static int createCamera(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
         ServerCommandSource source = context.getSource();
         ServerPlayerEntity player = source.getPlayerOrThrow();
-        String name = StringArgumentument.getString(context, "name");
+        String name = StringArgumentType.getString(context, "name");
         
         // 检查名称长度
         if (name.length() < 5 || name.length() > 16) {
@@ -94,7 +94,7 @@ public class PhotographerCommand {
      */
     private static int createCameraAtLocation(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
         ServerCommandSource source = context.getSource();
-        String name = StringArgumentument.getString(context, "name");
+        String name = StringArgumentType.getString(context, "name");
         Vec3d location = Vec3ArgumentType.getVec3(context, "location");
         
         // 检查名称长度
@@ -144,7 +144,7 @@ public class PhotographerCommand {
      */
     private static int removeCamera(CommandContext<ServerCommandSource> context) {
         ServerCommandSource source = context.getSource();
-        String name = StringArgumentument.getString(context, "name");
+        String name = StringArgumentType.getString(context, "name");
         
         // 检查摄像机是否存在
         if (!activeCameras.containsKey(name)) {

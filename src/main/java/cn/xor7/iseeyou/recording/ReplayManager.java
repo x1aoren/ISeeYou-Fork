@@ -113,7 +113,7 @@ public class ReplayManager {
         // 重新开始玩家录制
         for (UUID uuid : playersToRestart) {
             ServerPlayerEntity player = ISeeYouClient.getServer().getPlayerManager().getPlayer(uuid);
-            if (player != null && player.isConnected()) {
+            if (player != null && player.isOnline()) {
                 if (shouldRecordPlayer(player.getName().getString())) {
                     startRecording(player);
                 }
