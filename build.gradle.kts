@@ -5,16 +5,6 @@ plugins {
     id("com.github.johnrengelman.shadow") version "8.1.1"
     id("fabric-loom") version "1.4.1"
     kotlin("jvm") version "1.9.22"
-    id("com.gradle.enterprise") version "3.16.2"
-}
-
-// 配置构建扫描
-gradleEnterprise {
-    buildScan {
-        termsOfServiceUrl = "https://gradle.com/terms-of-service"
-        termsOfServiceAgree = "yes"
-        publishAlways()
-    }
 }
 
 group = "cn.xor7"
