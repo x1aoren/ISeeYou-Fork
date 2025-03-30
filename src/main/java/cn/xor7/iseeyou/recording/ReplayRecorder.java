@@ -2,6 +2,7 @@ package cn.xor7.iseeyou.recording;
 
 import cn.xor7.iseeyou.ISeeYouClient;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.SharedConstants;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -99,7 +100,7 @@ public class ReplayRecorder {
                 ISeeYouClient.getServer().getName(),
                 System.currentTimeMillis(),
                 ISeeYouClient.getServer().getVersion(),
-                player.networkHandler.getProtocolVersion(),
+                SharedConstants.getProtocolVersion(),
                 "ISeeYou Mod v" + ISeeYouClient.getVersion()
             );
             
