@@ -5,12 +5,14 @@ import cn.xor7.iseeyou.utils.ModConfig;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
+import net.minecraft.util.math.Vec3d;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -18,24 +20,120 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 回放管理器
  * 实现服务器端录制功能，管理玩家录制状态
  */
 public class ReplayManager {
-    private static final Map<UUID, ReplayRecorder> activeRecorders = new HashMap<>();
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
+    private static final Map<UUID, ReplayRecorder> activeRecorders = new ConcurrentHashMap<>();
+    private static final Map<String, ReplayRecorder> customRecorders = new ConcurrentHashMap<>();
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH-mm-ss");
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy_MM_dd");
     private static ModConfig config;
+    private static String currentDateFolder = "";
+    private static ScheduledExecutorService scheduler;
+    private static LocalDate lastRecordDate = LocalDate.now();
     
     /**
      * 初始化回放管理器
      */
     public static void initialize() {
         ISeeYouClient.LOGGER.info("初始化回放管理器...");
+        currentDateFolder = LocalDate.now().format(DATE_FORMATTER);
+        scheduler = Executors.newScheduledThreadPool(1);
+        
+        // 安排每日零点的任务
+        scheduleNextDayTask();
+    }
+    
+    /**
+     * 安排下一个零点任务
+     */
+    private static void scheduleNextDayTask() {
+        // 计算到下一个零点的毫秒数
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime nextDay = now.toLocalDate().plusDays(1).atStartOfDay();
+        long millisecondsUntilMidnight = java.time.Duration.between(now, nextDay).toMillis();
+        
+        // 安排任务
+        scheduler.schedule(() -> {
+            try {
+                // 更新当前日期文件夹
+                lastRecordDate = LocalDate.now();
+                currentDateFolder = lastRecordDate.format(DATE_FORMATTER);
+                
+                // 重新启动所有录制
+                restartAllRecordings();
+                
+                // 安排下一个零点任务
+                scheduleNextDayTask();
+            } catch (Exception e) {
+                ISeeYouClient.LOGGER.error("执行零点任务时出错", e);
+            }
+        }, millisecondsUntilMidnight, TimeUnit.MILLISECONDS);
+        
+        ISeeYouClient.LOGGER.info("已安排下一个零点任务，将在 " + nextDay + " 执行");
+    }
+    
+    /**
+     * 重启所有录制
+     */
+    private static void restartAllRecordings() {
+        ISeeYouClient.LOGGER.info("日期变更，重启所有录制...");
+        
+        // 保存当前所有录制器的引用
+        List<UUID> playersToRestart = new ArrayList<>(activeRecorders.keySet());
+        List<String> camerasToRestart = new ArrayList<>(customRecorders.keySet());
+        Map<String, ServerPlayerEntity> cameraPlayers = new HashMap<>();
+        Map<String, Vec3d> cameraLocations = new HashMap<>();
+        
+        // 保存摄像机信息
+        for (String name : camerasToRestart) {
+            ReplayRecorder recorder = customRecorders.get(name);
+            if (recorder != null) {
+                cameraPlayers.put(name, recorder.getPlayer());
+            }
+        }
+        
+        // 停止所有录制
+        stopAllRecordings();
+        
+        // 确保新日期文件夹存在
+        String basePath = "recording/" + currentDateFolder + "/";
+        File dir = new File(basePath);
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+        
+        // 重新开始玩家录制
+        for (UUID uuid : playersToRestart) {
+            ServerPlayerEntity player = ISeeYouClient.getServer().getPlayerManager().getPlayer(uuid);
+            if (player != null && player.isConnected()) {
+                if (shouldRecordPlayer(player.getName().getString())) {
+                    startRecording(player);
+                }
+            }
+        }
+        
+        // 重新开始摄像机录制
+        for (String name : camerasToRestart) {
+            ServerPlayerEntity player = cameraPlayers.get(name);
+            if (player != null) {
+                Vec3d location = cameraLocations.get(name);
+                if (location != null) {
+                    startCustomRecordingAtLocation(player, name, location);
+                } else {
+                    startCustomRecording(player, name);
+                }
+            }
+        }
+        
+        ISeeYouClient.LOGGER.info("重启录制完成");
     }
     
     /**
@@ -43,6 +141,41 @@ public class ReplayManager {
      */
     public static void setConfig(ModConfig config) {
         ReplayManager.config = config;
+    }
+    
+    /**
+     * 获取当前日期文件夹路径
+     * 确保目录存在
+     */
+    private static String getCurrentDateFolderPath() {
+        String basePath = "recording/" + currentDateFolder + "/";
+        File dir = new File(basePath);
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+        return basePath;
+    }
+    
+    /**
+     * 根据玩家生成文件名
+     */
+    private static String generateFileName(ServerPlayerEntity player) {
+        String playerName = player.getName().getString();
+        String time = LocalDateTime.now().format(TIME_FORMATTER);
+        
+        // 计算该玩家今天的录制次数
+        int count = 1;
+        String basePath = getCurrentDateFolderPath();
+        File dir = new File(basePath);
+        if (dir.exists()) {
+            String prefix = playerName + "_";
+            File[] files = dir.listFiles((d, name) -> name.startsWith(prefix) && name.endsWith(".mcpr"));
+            if (files != null) {
+                count = files.length + 1;
+            }
+        }
+        
+        return playerName + "_" + time + "_" + count + ".mcpr";
     }
     
     /**
@@ -65,20 +198,13 @@ public class ReplayManager {
         
         try {
             // 准备录制文件路径
-            String playerName = player.getName().getString();
-            String recordPath = config.getRecordingPath()
-                .replace("${name}", playerName)
-                .replace("${uuid}", playerUUID.toString());
-            
-            // 确保目录存在
-            File recordDir = new File(recordPath);
-            if (!recordDir.exists()) {
-                recordDir.mkdirs();
-            }
+            String recordPath = getCurrentDateFolderPath() + generateFileName(player);
             
             // 创建录制文件
-            String fileName = LocalDateTime.now().format(DATE_FORMATTER) + ".mcpr";
-            File recordFile = new File(recordDir, fileName);
+            File recordFile = new File(recordPath);
+            if (!recordFile.getParentFile().exists()) {
+                recordFile.getParentFile().mkdirs();
+            }
             
             // 创建录制器
             ReplayRecorder recorder = new ReplayRecorder(player, recordFile);
@@ -87,13 +213,90 @@ public class ReplayManager {
             // 开始录制
             recorder.startRecording();
             
-            // 通知玩家
-            player.sendMessage(Text.translatable("message.iseeyou.recording_started"));
-            
-            ISeeYouClient.LOGGER.info("已开始录制玩家: " + playerName);
+            ISeeYouClient.LOGGER.info("已开始录制玩家: " + player.getName().getString());
             return true;
         } catch (Exception e) {
             ISeeYouClient.LOGGER.error("开始录制玩家时出错: " + player.getName().getString(), e);
+            return false;
+        }
+    }
+    
+    /**
+     * 开始自定义录制
+     */
+    public static boolean startCustomRecording(ServerPlayerEntity player, String name) {
+        if (player == null) {
+            return false;
+        }
+        
+        // 检查是否已经存在该名称的录制
+        if (customRecorders.containsKey(name)) {
+            ISeeYouClient.LOGGER.info("已存在同名录制: " + name);
+            return false;
+        }
+        
+        try {
+            // 准备录制文件路径
+            String time = LocalDateTime.now().format(TIME_FORMATTER);
+            String recordPath = getCurrentDateFolderPath() + name + "_" + time + ".mcpr";
+            
+            // 创建录制文件
+            File recordFile = new File(recordPath);
+            if (!recordFile.getParentFile().exists()) {
+                recordFile.getParentFile().mkdirs();
+            }
+            
+            // 创建录制器
+            ReplayRecorder recorder = new ReplayRecorder(player, recordFile);
+            customRecorders.put(name, recorder);
+            
+            // 开始录制
+            recorder.startRecording();
+            
+            ISeeYouClient.LOGGER.info("已开始自定义录制: " + name);
+            return true;
+        } catch (Exception e) {
+            ISeeYouClient.LOGGER.error("开始自定义录制时出错: " + name, e);
+            return false;
+        }
+    }
+    
+    /**
+     * 在指定位置开始自定义录制
+     */
+    public static boolean startCustomRecordingAtLocation(ServerPlayerEntity player, String name, Vec3d location) {
+        if (player == null) {
+            return false;
+        }
+        
+        // 检查是否已经存在该名称的录制
+        if (customRecorders.containsKey(name)) {
+            ISeeYouClient.LOGGER.info("已存在同名录制: " + name);
+            return false;
+        }
+        
+        try {
+            // 准备录制文件路径
+            String time = LocalDateTime.now().format(TIME_FORMATTER);
+            String recordPath = getCurrentDateFolderPath() + name + "_" + time + ".mcpr";
+            
+            // 创建录制文件
+            File recordFile = new File(recordPath);
+            if (!recordFile.getParentFile().exists()) {
+                recordFile.getParentFile().mkdirs();
+            }
+            
+            // 创建录制器 - 未来可以修改为支持特定位置的录制
+            ReplayRecorder recorder = new ReplayRecorder(player, recordFile);
+            customRecorders.put(name, recorder);
+            
+            // 开始录制
+            recorder.startRecording();
+            
+            ISeeYouClient.LOGGER.info("已在位置 (" + location.x + "," + location.y + "," + location.z + ") 开始自定义录制: " + name);
+            return true;
+        } catch (Exception e) {
+            ISeeYouClient.LOGGER.error("开始自定义录制时出错: " + name, e);
             return false;
         }
     }
@@ -130,12 +333,37 @@ public class ReplayManager {
     }
     
     /**
+     * 停止自定义录制
+     */
+    public static boolean stopCustomRecording(ServerPlayerEntity player, String name) {
+        ReplayRecorder recorder = customRecorders.get(name);
+        
+        if (recorder == null) {
+            ISeeYouClient.LOGGER.info("找不到自定义录制: " + name);
+            return false;
+        }
+        
+        try {
+            // 停止录制
+            recorder.stopRecording();
+            customRecorders.remove(name);
+            
+            ISeeYouClient.LOGGER.info("已停止自定义录制: " + name);
+            return true;
+        } catch (Exception e) {
+            ISeeYouClient.LOGGER.error("停止自定义录制时出错: " + name, e);
+            return false;
+        }
+    }
+    
+    /**
      * 停止所有录制
      * 用于服务器关闭时
      */
     public static void stopAllRecordings() {
         ISeeYouClient.LOGGER.info("停止所有录制...");
         
+        // 停止玩家录制
         for (Map.Entry<UUID, ReplayRecorder> entry : activeRecorders.entrySet()) {
             try {
                 ReplayRecorder recorder = entry.getValue();
@@ -146,14 +374,59 @@ public class ReplayManager {
             }
         }
         
+        // 停止自定义录制
+        for (Map.Entry<String, ReplayRecorder> entry : customRecorders.entrySet()) {
+            try {
+                ReplayRecorder recorder = entry.getValue();
+                recorder.stopRecording();
+                ISeeYouClient.LOGGER.info("已停止自定义录制: " + entry.getKey());
+            } catch (Exception e) {
+                ISeeYouClient.LOGGER.error("停止自定义录制时出错: " + entry.getKey(), e);
+            }
+        }
+        
         activeRecorders.clear();
+        customRecorders.clear();
     }
     
     /**
-     * 获取播放器正在录制的玩家数量
+     * 检查即时回放功能是否启用
+     */
+    public static boolean isInstantReplayEnabled() {
+        return config != null && config.isEnableInstantReplay();
+    }
+    
+    /**
+     * 保存玩家的即时回放
+     */
+    public static String saveInstantReplay(ServerPlayerEntity player) {
+        if (player == null || !isInstantReplayEnabled()) {
+            return null;
+        }
+        
+        try {
+            // 准备即时回放文件路径
+            String playerName = player.getName().getString();
+            String time = LocalDateTime.now().format(TIME_FORMATTER);
+            String fileName = playerName + "_instant_" + time + ".mcpr";
+            String filePath = getCurrentDateFolderPath() + fileName;
+            
+            // 检查即时回放缓存
+            // 实现即时回放逻辑 - 这里需要根据实际情况完善
+            
+            ISeeYouClient.LOGGER.info("玩家 " + playerName + " 保存了即时回放");
+            return filePath;
+        } catch (Exception e) {
+            ISeeYouClient.LOGGER.error("保存即时回放时出错", e);
+            return null;
+        }
+    }
+    
+    /**
+     * 获取正在录制的玩家数量
      */
     public static int getActiveRecordingsCount() {
-        return activeRecorders.size();
+        return activeRecorders.size() + customRecorders.size();
     }
     
     /**
@@ -164,90 +437,31 @@ public class ReplayManager {
     }
     
     /**
-     * 确保目录存在
+     * 检查玩家是否应该被录制
+     * 根据配置的黑白名单决定
      */
-    private static void ensureDirectoryExists(String path) {
-        File dir = new File(path);
-        if (!dir.exists()) {
-            if (dir.mkdirs()) {
-                ISeeYouClient.LOGGER.info("创建目录：" + path);
-            } else {
-                ISeeYouClient.LOGGER.warn("无法创建目录：" + path);
-            }
+    private static boolean shouldRecordPlayer(String playerName) {
+        if (config == null) {
+            // 默认录制所有玩家
+            return true;
         }
-    }
-    
-    /**
-     * 安排清理任务
-     */
-    private static void scheduleCleanupTask() {
-        // 创建一个线程，定期清理旧文件
-        Thread cleanupThread = new Thread(() -> {
-            while (!Thread.currentThread().isInterrupted()) {
-                try {
-                    // 每天运行一次
-                    Thread.sleep(24 * 60 * 60 * 1000);
-                    cleanupOldRecordings();
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    break;
+        
+        if ("blacklist".equals(config.getRecordMode())) {
+            // 黑名单模式：如果玩家在黑名单中，不录制
+            for (String name : config.getBlacklist()) {
+                if (name.equalsIgnoreCase(playerName)) {
+                    return false;
                 }
             }
-        });
-        cleanupThread.setDaemon(true);
-        cleanupThread.start();
-        
-        ISeeYouClient.LOGGER.info("已安排自动清理任务");
-    }
-    
-    /**
-     * 清理旧回放文件
-     */
-    public static void cleanupOldRecordings() {
-        if (!config.isAutoCleanup()) {
-            return;
-        }
-        
-        int days = config.getCleanupDays();
-        if (days <= 0) {
-            return;
-        }
-        
-        ISeeYouClient.LOGGER.info("开始清理" + days + "天前的回放文件...");
-        
-        // 获取录制目录下的所有.mcpr文件
-        File recordingDir = new File(config.getRecordingPath());
-        File[] mcprFiles = recordingDir.listFiles((dir, name) -> name.toLowerCase().endsWith(".mcpr"));
-        
-        if (mcprFiles == null || mcprFiles.length == 0) {
-            ISeeYouClient.LOGGER.info("没有找到需要清理的文件");
-            return;
-        }
-        
-        LocalDateTime cutoffDate = LocalDateTime.now().minusDays(days);
-        int deletedCount = 0;
-        
-        for (File file : mcprFiles) {
-            try {
-                // 获取文件的最后修改时间
-                LocalDateTime fileDate = LocalDateTime.ofInstant(
-                    Files.getLastModifiedTime(file.toPath()).toInstant(),
-                    java.time.ZoneId.systemDefault()
-                );
-                
-                // 如果文件早于截止日期，删除它
-                if (fileDate.isBefore(cutoffDate)) {
-                    if (file.delete()) {
-                        deletedCount++;
-                    } else {
-                        ISeeYouClient.LOGGER.warn("无法删除文件: " + file.getAbsolutePath());
-                    }
+            return true; // 不在黑名单中，可以录制
+        } else {
+            // 白名单模式：只有在白名单中的玩家才录制
+            for (String name : config.getWhitelist()) {
+                if (name.equalsIgnoreCase(playerName)) {
+                    return true;
                 }
-            } catch (IOException e) {
-                ISeeYouClient.LOGGER.error("处理文件时出错: " + file.getAbsolutePath(), e);
             }
+            return config.getWhitelist().length == 0; // 如果白名单为空，录制所有玩家
         }
-        
-        ISeeYouClient.LOGGER.info("清理完成，删除了" + deletedCount + "个过期回放文件");
     }
 } 

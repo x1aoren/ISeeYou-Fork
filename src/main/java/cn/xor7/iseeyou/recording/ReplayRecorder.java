@@ -6,7 +6,10 @@ import net.minecraft.SharedConstants;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.file.Files;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.UUID;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -20,6 +23,7 @@ public class ReplayRecorder {
     private final File recordFile;
     private final UUID recordId;
     private boolean isRecording = false;
+    private long startTime;
     
     /**
      * 创建回放录制器
@@ -45,6 +49,9 @@ public class ReplayRecorder {
             if (!recordFile.getParentFile().exists()) {
                 recordFile.getParentFile().mkdirs();
             }
+            
+            // 记录开始时间
+            startTime = System.currentTimeMillis();
             
             // 初始化MCPR文件结构
             initMcprFile();
@@ -95,13 +102,21 @@ public class ReplayRecorder {
             zipOut.putNextEntry(metadataEntry);
             
             // 创建基本元数据
+            String serverName = ISeeYouClient.getServer().getName();
+            String serverIP = "localhost"; // 对于服务器端录制这个不重要
+            String playerName = player.getName().getString();
+            int protocolVersion = SharedConstants.getProtocolVersion();
+            String mcVersion = SharedConstants.getGameVersion().getName();
+            
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
+            String recordingDate = sdf.format(new Date());
+            
             String metadata = String.format(
-                "{\"serverName\":\"%s\",\"generator\":\"ISeeYou Mod\",\"date\":%d,\"mcversion\":\"%s\",\"fileFormat\":\"MCPR\",\"fileFormatVersion\":14,\"protocol\":%d,\"duration\":0,\"singleplayer\":false,\"generator\":\"%s\"}",
-                ISeeYouClient.getServer().getName(),
-                System.currentTimeMillis(),
-                ISeeYouClient.getServer().getVersion(),
-                SharedConstants.getProtocolVersion(),
-                "ISeeYou Mod v" + ISeeYouClient.getVersion()
+                "{\"serverName\":\"%s\",\"serverIP\":\"%s\",\"generator\":\"ISeeYou Mod\",\"date\":%d," +
+                "\"mcversion\":\"%s\",\"fileFormat\":\"MCPR\",\"fileFormatVersion\":14,\"protocol\":%d," +
+                "\"duration\":0,\"singleplayer\":false,\"recordingDate\":\"%s\",\"recordingPlayer\":\"%s\"," +
+                "\"replayVersion\":\"2.6.10\"}",
+                serverName, serverIP, startTime, mcVersion, protocolVersion, recordingDate, playerName
             );
             
             zipOut.write(metadata.getBytes());
@@ -111,6 +126,13 @@ public class ReplayRecorder {
             ZipEntry recordingEntry = new ZipEntry("recording.tmcpr");
             zipOut.putNextEntry(recordingEntry);
             zipOut.closeEntry();
+            
+            // 添加必要的播放标记文件
+            ZipEntry markerEntry = new ZipEntry("markers.json");
+            zipOut.putNextEntry(markerEntry);
+            String markers = "{\"markers\":[],\"realtime\":true,\"spec\":1}";
+            zipOut.write(markers.getBytes());
+            zipOut.closeEntry();
         }
     }
     
@@ -118,32 +140,49 @@ public class ReplayRecorder {
      * 开始录制玩家行为
      */
     private void startRecordingPlayerBehavior() {
-        // 在这里实现录制玩家行为的逻辑
-        // 这里我们会使用Fabric API的事件系统来捕获玩家的行为
-        
-        // 例如，可以监听玩家移动、操作、聊天等事件
-        // 并将它们序列化到.mcpr文件中
+        // 在这里使用Leaves/Leaf核心的API来录制玩家行为
+        // 这部分需要与服务器核心紧密集成
+        try {
+            // 使用Leaves/Leaf的ReplayAPI开始录制
+            // 具体实现因服务器版本而异
+        } catch (Exception e) {
+            ISeeYouClient.LOGGER.error("开始录制玩家行为时出错", e);
+        }
     }
     
     /**
      * 停止录制玩家行为
      */
     private void stopRecordingPlayerBehavior() {
-        // 停止监听玩家行为
-        // 清理所有监听器
+        // 停止Leaves/Leaf核心的录制
+        try {
+            // 使用Leaves/Leaf的ReplayAPI停止录制
+            // 具体实现因服务器版本而异
+        } catch (Exception e) {
+            ISeeYouClient.LOGGER.error("停止录制玩家行为时出错", e);
+        }
     }
     
     /**
      * 完成MCPR文件
      */
     private void finalizeMcprFile() throws Exception {
-        // 在这里我们可以更新元数据，添加最终的录制长度等信息
+        long endTime = System.currentTimeMillis();
+        long duration = (endTime - startTime) / 1000; // 秒为单位的持续时间
         
-        // 由于MCPR是一个ZIP文件，我们可以打开它并修改/添加文件
-        // 但为了简单起见，我们这里只是确保文件已经关闭
-        
-        // 确保文件已写入磁盘
-        Files.setLastModifiedTime(recordFile.toPath(), java.nio.file.attribute.FileTime.fromMillis(System.currentTimeMillis()));
+        // 更新元数据中的录制时长
+        // 这里需要重新打开ZIP文件，修改metaData.json
+        try {
+            // 实际录制可能需要更复杂的文件操作
+            // 这里简化处理，只是确保文件已经写入磁盘
+            Files.setLastModifiedTime(recordFile.toPath(), java.nio.file.attribute.FileTime.fromMillis(endTime));
+            
+            // TODO: 更新元数据中的duration值
+            // 理想情况下，我们应该读取zip，修改metaData.json，然后重新写入
+            // 但这需要完整的zip文件操作，这里省略
+        } catch (IOException e) {
+            ISeeYouClient.LOGGER.error("完成录制文件时出错", e);
+        }
     }
     
     /**
