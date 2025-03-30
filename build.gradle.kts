@@ -13,7 +13,7 @@ version = "1.3.5"
 val minecraftVersion = "1.21"
 val yarnMappings = "1.21+build.5"
 val loaderVersion = "0.15.5"
-val fabricVersion = "0.91.5+1.21"
+val fabricVersion = "0.102.0+1.21"
 
 base {
     archivesName.set("iseeyou")
