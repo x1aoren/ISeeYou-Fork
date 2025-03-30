@@ -1,8 +1,5 @@
-import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-
 plugins {
     id("java")
-    id("com.github.johnrengelman.shadow") version "8.1.1"
     id("fabric-loom") version "1.4.1"
     kotlin("jvm") version "1.9.22"
 }
@@ -52,16 +49,17 @@ dependencies {
     modImplementation("net.fabricmc.fabric-api:fabric-api:${fabricVersion}")
     
     // 其他依赖
+    include("com.moandjiezana.toml:toml4j:0.7.2")
     implementation("com.moandjiezana.toml:toml4j:0.7.2")
+    
+    include("org.jetbrains.kotlin:kotlin-stdlib:1.9.22")
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.22")
+    
+    include("net.jodah:expiringmap:0.5.11")
     implementation("net.jodah:expiringmap:0.5.11")
     
-    // Shadow配置
-    shadow("org.jetbrains.kotlin:kotlin-stdlib:1.9.22")
-    shadow("com.moandjiezana.toml:toml4j:0.7.2")
-    shadow("net.jodah:expiringmap:0.5.11")
-    
     // 添加Gson依赖
+    include("com.google.code.gson:gson:2.10.1")
     implementation("com.google.code.gson:gson:2.10.1")
     annotationProcessor("com.google.code.gson:gson:2.10.1")
 }
@@ -104,21 +102,6 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
     }
 }
 
-tasks.withType<ShadowJar> {
-    archiveClassifier.set("dev")
-    minimize()
-    exclude("META-INF/*.SF")
-    exclude("META-INF/*.DSA")
-    exclude("META-INF/*.RSA")
-    mergeServiceFiles()
-}
-
-// 创建一个常规的JAR，作为Fabric模组发布
-tasks.jar {
-    dependsOn("shadowJar")
-    archiveClassifier.set("") 
-}
-
 kotlin {
     jvmToolchain(21) // 保持Kotlin JVM目标为21
 }
@@ -130,9 +113,6 @@ loom {
         configureEach {
             property("fabric.log.level", "debug")
         }
-        
-        // 不需要显式创建server配置，因为Loom已经默认提供
-        // server配置在configureEach中已经设置了属性
     }
     
     mixin {
