@@ -99,7 +99,7 @@ public class ReplayRecorder {
                 ISeeYouClient.getServer().getName(),
                 System.currentTimeMillis(),
                 ISeeYouClient.getServer().getVersion(),
-                ISeeYouClient.getServer().getServerVersion(),
+                player.networkHandler.getConnection().getProtocolVersion(),
                 "ISeeYou Mod v" + ISeeYouClient.getVersion()
             );
             
