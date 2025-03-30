@@ -1,9 +1,12 @@
 package cn.xor7.iseeyou;
 
+import cn.xor7.iseeyou.commands.InstantReplayCommand;
+import cn.xor7.iseeyou.commands.PhotographerCommand;
 import cn.xor7.iseeyou.recording.ReplayManager;
 import cn.xor7.iseeyou.utils.ConfigManager;
 import cn.xor7.iseeyou.utils.ModConfig;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
@@ -39,21 +42,21 @@ public class ISeeYouClient implements ModInitializer {
         config = ConfigManager.loadConfig();
         
         // 确保录制目录存在
-        File recordingDir = new File(config.getRecordingPath());
+        File recordingDir = new File("recording");
         if (!recordingDir.exists()) {
             recordingDir.mkdirs();
             LOGGER.info("创建录制目录: " + recordingDir.getAbsolutePath());
         }
         
-        File instantDir = new File(config.getInstantReplayPath());
-        if (!instantDir.exists()) {
-            instantDir.mkdirs();
-            LOGGER.info("创建即时回放目录: " + instantDir.getAbsolutePath());
-        }
-        
         // 初始化回放管理器
         ReplayManager.initialize();
         ReplayManager.setConfig(config);
+        
+        // 注册命令
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+            PhotographerCommand.register(dispatcher);
+            InstantReplayCommand.register(dispatcher);
+        });
         
         // 注册服务器生命周期事件
         ServerLifecycleEvents.SERVER_STARTING.register(server -> {
@@ -78,7 +81,9 @@ public class ISeeYouClient implements ModInitializer {
                 if (success) {
                     LOGGER.info("开始录制玩家: " + playerName);
                     
-                    // 发送通知给管理员
+                    // 注释掉用户消息通知，确保安全性
+                    // 不向玩家发送录制开始消息
+                    // 只有管理员需要收到通知
                     if (config.isNotifyAdmins()) {
                         sendMessageToAdmins(Text.translatable("message.iseeyou.recording_started_for", playerName));
                     }
