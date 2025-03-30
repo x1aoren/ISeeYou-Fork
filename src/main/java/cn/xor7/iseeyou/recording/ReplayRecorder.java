@@ -99,7 +99,7 @@ public class ReplayRecorder {
                 ISeeYouClient.getServer().getName(),
                 System.currentTimeMillis(),
                 ISeeYouClient.getServer().getVersion(),
-                764, // 固定使用Minecraft 1.21.1的协议版本号
+                player.networkHandler.getProtocolVersion(),
                 "ISeeYou Mod v" + ISeeYouClient.getVersion()
             );
             
