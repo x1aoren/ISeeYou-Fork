@@ -186,10 +186,10 @@ public class ReplayRecorder {
         try {
             // 移除Fabric事件监听器
             if (this.joinListener != null) {
-                ServerPlayConnectionEvents.JOIN.unregister(this.joinListener);
+                ServerPlayConnectionEvents.JOIN.getInvoker().unregister(this.joinListener);
             }
             if (this.disconnectListener != null) {
-                ServerPlayConnectionEvents.DISCONNECT.unregister(this.disconnectListener);
+                ServerPlayConnectionEvents.DISCONNECT.getInvoker().unregister(this.disconnectListener);
             }
             if (this.tickListener != null) {
                 ServerTickEvents.END_SERVER_TICK.unregister(this.tickListener);
