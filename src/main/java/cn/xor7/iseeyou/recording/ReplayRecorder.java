@@ -27,6 +27,10 @@ public class ReplayRecorder {
     private boolean isRecording = false;
     private long startTime;
     
+    private ServerPlayConnectionEvents.Join joinListener;
+    private ServerPlayConnectionEvents.Disconnect disconnectListener;
+    private ServerTickEvents.EndTick tickListener;
+    
     /**
      * 创建回放录制器
      * @param player 要录制的玩家
@@ -144,19 +148,19 @@ public class ReplayRecorder {
     private void startRecordingPlayerBehavior() {
         try {
             // 初始化Fabric事件监听器来记录玩家行为
-            ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+            this.joinListener = ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
                 if (handler.getPlayer().getUuid().equals(player.getUuid())) {
                     ISeeYouClient.LOGGER.info("开始录制玩家加入事件: " + player.getName().getString());
                 }
             });
             
-            ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+            this.disconnectListener = ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
                 if (handler.getPlayer().getUuid().equals(player.getUuid())) {
                     ISeeYouClient.LOGGER.info("录制玩家断开连接: " + player.getName().getString());
                 }
             });
             
-            ServerTickEvents.END_SERVER_TICK.register(server -> {
+            this.tickListener = ServerTickEvents.END_SERVER_TICK.register(server -> {
                 // 记录玩家位置和动作
                 ISeeYouClient.LOGGER.debug("记录玩家位置: " + player.getPos() + " 朝向: " + player.getYaw() + "/" + player.getPitch());
             });
