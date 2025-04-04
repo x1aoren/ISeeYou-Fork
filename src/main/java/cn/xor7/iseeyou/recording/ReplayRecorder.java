@@ -148,25 +148,37 @@ public class ReplayRecorder {
     private void startRecordingPlayerBehavior() {
         try {
             // 初始化Fabric事件监听器来记录玩家行为
-            this.joinListener = ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
-                if (handler.getPlayer().getUuid().equals(player.getUuid())) {
-                    ISeeYouClient.LOGGER.info("开始录制玩家加入事件: " + player.getName().getString());
+            this.joinListener = new ServerPlayConnectionEvents.Join() {
+                @Override
+                public void onPlayReady(ServerPlayerEntity player, PacketSender sender, ServerWorld world) {
+                    if (player.getUuid().equals(ReplayRecorder.this.player.getUuid())) {
+                        ISeeYouClient.LOGGER.info("开始录制玩家加入事件: " + player.getName().getString());
+                    }
                 }
-            });
+            };
+            ServerPlayConnectionEvents.JOIN.register(this.joinListener);
             
-            this.disconnectListener = ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
-                if (handler.getPlayer().getUuid().equals(player.getUuid())) {
-                    ISeeYouClient.LOGGER.info("录制玩家断开连接: " + player.getName().getString());
-                    stopRecording();
+            this.disconnectListener = new ServerPlayConnectionEvents.Disconnect() {
+                @Override
+                public void onPlayDisconnect(ServerPlayerEntity player) {
+                    if (player.getUuid().equals(ReplayRecorder.this.player.getUuid())) {
+                        ISeeYouClient.LOGGER.info("录制玩家断开连接: " + player.getName().getString());
+                        stopRecording();
+                    }
                 }
-            });
+            };
+            ServerPlayConnectionEvents.DISCONNECT.register(this.disconnectListener);
             
-            this.tickListener = ServerTickEvents.END_SERVER_TICK.register(server -> {
-                if (isRecording) {
-                    // 记录玩家位置和动作
-                    ISeeYouClient.LOGGER.debug("记录玩家位置: " + player.getPos() + " 朝向: " + player.getYaw() + "/" + player.getPitch());
+            this.tickListener = new ServerTickEvents.EndTick() {
+                @Override
+                public void onEndTick(MinecraftServer server) {
+                    if (isRecording) {
+                        // 记录玩家位置和动作
+                        ISeeYouClient.LOGGER.debug("记录玩家位置: " + player.getPos() + " 朝向: " + player.getYaw() + "/" + player.getPitch());
+                    }
                 }
-            });
+            };
+            ServerTickEvents.END_SERVER_TICK.register(this.tickListener);
             
             ISeeYouClient.LOGGER.info("已注册Fabric事件监听器录制玩家行为");
         } catch (Exception e) {
