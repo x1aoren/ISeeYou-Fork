@@ -104,6 +104,9 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
 
 kotlin {
     jvmToolchain(21) // 保持Kotlin JVM目标为21
+    sourceSets {
+        main.kotlin.srcDirs += 'src/main/java'
+    }
 }
 
 // 使用正确的语法配置Loom
