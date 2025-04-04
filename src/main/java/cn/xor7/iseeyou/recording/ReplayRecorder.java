@@ -148,14 +148,16 @@ public class ReplayRecorder {
     private void startRecordingPlayerBehavior() {
         try {
             // 初始化Fabric事件监听器来记录玩家行为
-            this.joinListener = (player, sender, world) -> {
+            this.joinListener = (handler, sender, server) -> {
+                ServerPlayerEntity player = handler.getPlayer();
                 if (player.getUuid().equals(ReplayRecorder.this.player.getUuid())) {
                     ISeeYouClient.LOGGER.info("开始录制玩家加入事件: " + player.getName().getString());
                 }
             };
             ServerPlayConnectionEvents.JOIN.register(this.joinListener);
             
-            this.disconnectListener = (player) -> {
+            this.disconnectListener = (handler, server) -> {
+                ServerPlayerEntity player = handler.getPlayer();
                 if (player.getUuid().equals(ReplayRecorder.this.player.getUuid())) {
                     ISeeYouClient.LOGGER.info("录制玩家断开连接: " + player.getName().getString());
                     stopRecording();
