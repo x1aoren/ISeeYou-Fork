@@ -173,9 +173,9 @@ public class ReplayRecorder {
     private void stopRecordingPlayerBehavior() {
         try {
             // 移除Fabric事件监听器
-            ServerPlayConnectionEvents.JOIN.unregister((handler, sender, server) -> {});
-            ServerPlayConnectionEvents.DISCONNECT.unregister((handler, server) -> {});
-            ServerTickEvents.END_SERVER_TICK.unregister(server -> {});
+            ServerPlayConnectionEvents.JOIN.unregister(this.joinListener);
+            ServerPlayConnectionEvents.DISCONNECT.unregister(this.disconnectListener);
+            ServerTickEvents.END_SERVER_TICK.unregister(this.tickListener);
             
             ISeeYouClient.LOGGER.info("已移除所有Fabric事件监听器");
         } catch (Exception e) {
