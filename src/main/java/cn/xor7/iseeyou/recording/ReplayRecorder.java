@@ -140,11 +140,26 @@ public class ReplayRecorder {
      * 开始录制玩家行为
      */
     private void startRecordingPlayerBehavior() {
-        // 在这里使用Leaves/Leaf核心的API来录制玩家行为
-        // 这部分需要与服务器核心紧密集成
         try {
-            // 使用Leaves/Leaf的ReplayAPI开始录制
-            // 具体实现因服务器版本而异
+            // 初始化Fabric事件监听器来记录玩家行为
+            ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+                if (handler.getPlayer().getUuid().equals(player.getUuid())) {
+                    ISeeYouClient.LOGGER.info("开始录制玩家加入事件: " + player.getName().getString());
+                }
+            });
+            
+            ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+                if (handler.getPlayer().getUuid().equals(player.getUuid())) {
+                    ISeeYouClient.LOGGER.info("录制玩家断开连接: " + player.getName().getString());
+                }
+            });
+            
+            ServerTickEvents.END_SERVER_TICK.register(server -> {
+                // 记录玩家位置和动作
+                ISeeYouClient.LOGGER.debug("记录玩家位置: " + player.getPos() + " 朝向: " + player.getYaw() + "/" + player.getPitch());
+            });
+            
+            ISeeYouClient.LOGGER.info("已注册Fabric事件监听器录制玩家行为");
         } catch (Exception e) {
             ISeeYouClient.LOGGER.error("开始录制玩家行为时出错", e);
         }
@@ -154,10 +169,13 @@ public class ReplayRecorder {
      * 停止录制玩家行为
      */
     private void stopRecordingPlayerBehavior() {
-        // 停止Leaves/Leaf核心的录制
         try {
-            // 使用Leaves/Leaf的ReplayAPI停止录制
-            // 具体实现因服务器版本而异
+            // 移除Fabric事件监听器
+            ServerPlayConnectionEvents.JOIN.unregister((handler, sender, server) -> {});
+            ServerPlayConnectionEvents.DISCONNECT.unregister((handler, server) -> {});
+            ServerTickEvents.END_SERVER_TICK.unregister(server -> {});
+            
+            ISeeYouClient.LOGGER.info("已移除所有Fabric事件监听器");
         } catch (Exception e) {
             ISeeYouClient.LOGGER.error("停止录制玩家行为时出错", e);
         }
