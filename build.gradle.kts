@@ -105,7 +105,7 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
 kotlin {
     jvmToolchain(21) // 保持Kotlin JVM目标为21
     sourceSets {
-        main.kotlin.srcDirs += 'src/main/java'
+        main.kotlin.srcDirs += "src/main/java"
     }
 }
 
