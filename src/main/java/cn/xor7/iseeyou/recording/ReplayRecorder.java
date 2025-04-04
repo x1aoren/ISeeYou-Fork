@@ -130,7 +130,7 @@ public class ReplayRecorder {
             // 添加必要的播放标记文件
             ZipEntry markerEntry = new ZipEntry("markers.json");
             zipOut.putNextEntry(markerEntry);
-            String markers = "{\"markers\":[],\"realtime\":true,\"spec\":1}";
+            String markers = "[{\"name\":\"start\",\"time\":0,\"color\":16777215}]";
             zipOut.write(markers.getBytes());
             zipOut.closeEntry();
         }
@@ -212,4 +212,4 @@ public class ReplayRecorder {
     public boolean isRecording() {
         return isRecording;
     }
-} 
+}
