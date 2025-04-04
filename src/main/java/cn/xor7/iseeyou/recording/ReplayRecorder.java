@@ -1,6 +1,8 @@
 package cn.xor7.iseeyou.recording;
 
 import cn.xor7.iseeyou.ISeeYouClient;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.SharedConstants;
 
